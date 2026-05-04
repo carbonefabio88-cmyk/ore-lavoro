@@ -1,0 +1,68 @@
+{
+  "name": "Ore Lavoro",
+  "short_name": "OreLavoro",
+  "description": "Tracker ore lavorative e straordinari",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "▶ Inizia lavoro",
+      "short_name": "Entrata",
+      "description": "Registra l'orario di entrata",
+      "url": "./index.html?action=start",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "⏸ Inizio pausa",
+      "short_name": "Pausa",
+      "description": "Registra l'inizio della pausa",
+      "url": "./index.html?action=break",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "⏵ Fine pausa",
+      "short_name": "Rientro",
+      "description": "Registra il rientro dalla pausa",
+      "url": "./index.html?action=endbreak",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "■ Fine giornata",
+      "short_name": "Uscita",
+      "description": "Registra l'uscita e chiude la giornata",
+      "url": "./index.html?action=end",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

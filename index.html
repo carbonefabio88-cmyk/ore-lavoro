@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0f0f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="OreLavoro" />
+  <title>Ore Lavoro</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Firebase (attivato quando si incolla la config) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:#0f0f0f; --bg2:#0a0a0a; --bg3:#080808; --bg4:#0d0d0d;
+      --border:#1a1a1a; --border2:#111; --border3:#222;
+      --text:#e8e0d0; --text2:#d0c8c0; --text3:#bbb; --text4:#888;
+      --text5:#555; --text6:#444; --text7:#333;
+      --title:#f5f0e8; --muted:#2a2a2a; --muted2:#252525;
+      --green:#5aaa5a; --green-bg:#0d1f0d; --green-border:#1a4a1a; --green-dark:#0a180a;
+      --green-dim:#3a8a3a; --green-dimmer:#2a6a2a; --green-faint:#163016;
+      --orange:#dd7722; --orange-bg:#2a1800; --orange-border:#aa5500; --orange-dark:#1a1000;
+      --blue:#6aaade; --blue-bg:#101a28; --blue-border:#3a6a9a;
+      --red:#cc4444; --red-bg:#200808; --red-border:#6a1a1a;
+      --sat-bg:#0c0800; --sat-border:#2a1800; --sat-text:#8a5a20;
+      --sat-tag-color:#7a4000; --sat-tag-border:#4a2800;
+      --step-bg:#0d0d0d; --step-border:#1e1e1e;
+      --step-done-bg:#1a3a1a; --step-done-border:#3a8a3a;
+      --live-border:#161616; --week-bg:#0a0a0a;
+      --tab-active-bg:#161616; --tab-active-border:#2a2a2a; --tab-active-color:#bbb;
+      --modal-bg:#0e0e0e; --modal-title:#f0ebe3;
+      --field-bg:#080808; --field-border:#1e1e1e; --field-color:#d0c8c0;
+      --cancel-bg:#111; --row-hover:#111;
+      --install-bg:#0d1f0d; --install-border:#2a5a2a;
+      --settings-overlay:rgba(0,0,0,0.96);
+      --settings-panel:#0d0d0d; --settings-panel-border:#222;
+      --cs:dark;
+      --btn-idle-bg:linear-gradient(135deg,#111,#0d0d0d);
+      --btn-idle-border:#252525; --btn-idle-color:#888;
+      --btn-work-bg:linear-gradient(135deg,#0d1f0d,#0a180a);
+      --btn-work-border:#2a7a2a; --btn-work-color:#5aaa5a;
+      --btn-break-bg:linear-gradient(135deg,#2a1800,#1a1000);
+      --btn-break-border:#aa5500; --btn-break-color:#dd7722;
+      --banca-pos-bg:#080f08; --banca-pos-border:#163016;
+      --banca-neg-bg:#0f0808; --banca-neg-border:#301616;
+    }
+    body.light {
+      --bg:#f4f2ee; --bg2:#ece9e3; --bg3:#e4e0d8; --bg4:#f0ede8;
+      --border:#d0cac0; --border2:#ccc5b8; --border3:#bbb4a8;
+      --text:#2a2520; --text2:#3a342e; --text3:#4a443e; --text4:#7a736a;
+      --text5:#9a938a; --text6:#aaa49a; --text7:#bbb4aa;
+      --title:#1a1510; --muted:#c8c0b4; --muted2:#d0c8bc;
+      --green:#2a7a2a; --green-bg:#e8f4e8; --green-border:#6aaa6a; --green-dark:#d4eed4;
+      --green-dim:#2a7a2a; --green-dimmer:#3a8a3a; --green-faint:#c0dcc0;
+      --orange:#b85a00; --orange-bg:#fdf0e0; --orange-border:#d08030; --orange-dark:#f8e8cc;
+      --blue:#2a5a9a; --blue-bg:#e8eef8; --blue-border:#6a8aca;
+      --red:#cc2222; --red-bg:#fff0f0; --red-border:#cc8888;
+      --sat-bg:#fdf4e8; --sat-border:#e8c878; --sat-text:#8a5a00;
+      --sat-tag-color:#9a6000; --sat-tag-border:#d4a040;
+      --step-bg:#e8e4dc; --step-border:#c8c0b4;
+      --step-done-bg:#c8e8c8; --step-done-border:#6aaa6a;
+      --live-border:#d0c8bc; --week-bg:#ece9e3;
+      --tab-active-bg:#d8d2c8; --tab-active-border:#c0b8ac; --tab-active-color:#2a2520;
+      --modal-bg:#f4f2ee; --modal-title:#1a1510;
+      --field-bg:#ece9e3; --field-border:#c8c0b4; --field-color:#2a2520;
+      --cancel-bg:#e4e0d8; --row-hover:#e4e0d8;
+      --install-bg:#e8f4e8; --install-border:#6aaa6a;
+      --settings-overlay:rgba(240,237,232,0.96);
+      --settings-panel:#f4f2ee; --settings-panel-border:#c8c0b4;
+      --cs:light;
+      --btn-idle-bg:linear-gradient(135deg,#e8e4dc,#e0dcd4);
+      --btn-idle-border:#c0b8ac; --btn-idle-color:#7a736a;
+      --btn-work-bg:linear-gradient(135deg,#e8f4e8,#d4eed4);
+      --btn-work-border:#6aaa6a; --btn-work-color:#2a7a2a;
+      --btn-break-bg:linear-gradient(135deg,#fdf0e0,#f8e8cc);
+      --btn-break-border:#d08030; --btn-break-color:#b85a00;
+      --banca-pos-bg:var(--green-bg); --banca-pos-border:var(--green-faint);
+      --banca-neg-bg:var(--red-bg); --banca-neg-border:var(--red-border);
+    }
+
+    html, body { height:100%; background:var(--bg); color:var(--text); font-family:'DM Mono','Courier New',monospace; transition:background 0.25s,color 0.25s; }
+    body { padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0); }
+    ::-webkit-scrollbar { width:3px; } ::-webkit-scrollbar-thumb { background:var(--border3); border-radius:2px; }
+    input, button { font-family:'DM Mono',monospace; }
+    input { color-scheme:var(--cs); }
+    button { border:none; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent; }
+    button:active { transform:scale(0.96); }
+    .row-h:active { background:var(--row-hover) !important; }
+
+    #app { max-width:480px; margin:0 auto; padding:24px 16px 60px; min-height:100vh; }
+
+    #toast { position:fixed; top:calc(env(safe-area-inset-top,0px) + 14px); left:50%; transform:translateX(-50%); padding:10px 22px; border-radius:6px; font-size:13px; z-index:999; white-space:nowrap; box-shadow:0 4px 24px rgba(0,0,0,0.2); pointer-events:none; transition:opacity 0.3s; font-family:'DM Mono',monospace; }
+    #toast.hidden { opacity:0; }
+    #toast.ok   { background:var(--green-bg); border:1px solid var(--green-border); color:var(--text); }
+    #toast.warn { background:var(--orange-bg); border:1px solid var(--orange-border); color:var(--text); }
+
+    .header-title { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; letter-spacing:-1px; color:var(--title); }
+    .header-sub { font-size:10px; color:var(--text5); letter-spacing:2px; margin-top:2px; }
+    .sat-badge { font-size:9px; background:var(--orange-bg); border:1px solid var(--orange-border); color:var(--orange); padding:2px 8px; border-radius:4px; letter-spacing:1px; vertical-align:middle; margin-left:8px; }
+
+    .steps { display:flex; align-items:flex-start; margin:22px 0; }
+    .step-wrap { display:flex; align-items:center; flex:1; }
+    .step-wrap:last-child { flex:none; }
+    .step-node { display:flex; flex-direction:column; align-items:center; gap:5px; }
+    .step-circle { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; transition:all 0.3s; border:2px solid var(--step-border); background:var(--step-bg); color:var(--muted); }
+    .step-circle.done   { background:var(--step-done-bg); border-color:var(--step-done-border); color:var(--green); }
+    .step-circle.active { background:var(--blue-bg); border-color:var(--blue-border); color:var(--blue); box-shadow:0 0 12px rgba(58,106,154,0.25); animation:pulse 2s infinite; }
+    .step-label { font-size:8px; letter-spacing:0.5px; line-height:1.4; text-align:center; color:var(--muted); white-space:pre; }
+    .step-label.done   { color:var(--green-dim); }
+    .step-label.active { color:var(--blue); }
+    .step-line { flex:1; height:2px; margin:0 3px; margin-bottom:22px; background:var(--border); transition:background 0.3s; }
+    .step-line.done { background:var(--green-dimmer); }
+
+    #main-btn { width:100%; padding:20px; border-radius:12px; font-family:'Syne',sans-serif; font-size:17px; font-weight:700; letter-spacing:1px; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:8px; transition:all 0.25s; border:2px solid transparent; }
+    #main-btn.s-idle    { background:var(--btn-idle-bg);  border-color:var(--btn-idle-border);  color:var(--btn-idle-color); }
+    #main-btn.s-working { background:var(--btn-work-bg);  border-color:var(--btn-work-border);  color:var(--btn-work-color); }
+    #main-btn.s-break   { background:var(--btn-break-bg); border-color:var(--btn-break-border); color:var(--btn-break-color); }
+
+    #skip-btn, #cancel-break-btn { width:100%; padding:10px; border-radius:8px; font-size:10px; letter-spacing:1px; margin-bottom:8px; border:1px solid transparent; display:flex; align-items:center; justify-content:center; gap:8px; }
+    #skip-btn         { background:var(--bg2); border-color:var(--border3); color:var(--text4); }
+    #cancel-break-btn { background:var(--orange-bg); border-color:var(--orange-border); color:var(--orange); }
+    #btn-gap { height:6px; }
+
+    #live-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-bottom:18px; }
+    .live-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; }
+    .live-label { font-size:8px; color:var(--text6); letter-spacing:1px; margin-bottom:3px; }
+    .live-val { font-size:13px; color:var(--muted2); }
+    .live-val.set { color:var(--text2); }
+    .live-stats { display:flex; gap:20px; margin-top:12px; padding-top:10px; border-top:1px solid var(--live-border); }
+    .live-stat-label { font-size:8px; color:var(--text6); letter-spacing:1px; }
+    .live-stat-val { font-size:22px; color:var(--text2); font-weight:500; margin-top:2px; }
+    .dot-live { width:7px; height:7px; border-radius:50%; animation:pulse 2s infinite; }
+    .dot-live.working  { background:var(--green-dim);    box-shadow:0 0 6px var(--green-dim); }
+    .dot-live.on-break { background:var(--orange-border); box-shadow:0 0 6px var(--orange-border); }
+
+    #banca { border-radius:8px; padding:11px 16px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; border:1px solid; }
+    #banca.pos { background:var(--banca-pos-bg); border-color:var(--banca-pos-border); }
+    #banca.neg { background:var(--banca-neg-bg); border-color:var(--banca-neg-border); }
+    #banca .label { font-size:9px; color:var(--text4); letter-spacing:1px; }
+    #banca .value { font-size:20px; font-weight:500; }
+    #banca .value.pos { color:var(--green); }
+    #banca .value.neg { color:var(--red); }
+
+    #week-grid-wrap { background:var(--week-bg); border:1px solid var(--border); border-radius:10px; padding:13px; margin-bottom:18px; }
+    .week-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:4px; }
+    .week-cell { border-radius:6px; padding:7px 4px; text-align:center; border:1px solid; }
+    .wk-today  { background:var(--blue-bg);  border-color:var(--blue-border); }
+    .wk-sat    { background:var(--sat-bg);   border-color:var(--sat-border); }
+    .wk-normal { background:var(--bg3);      border-color:var(--border2); }
+    .wk-day { font-size:8px; margin-bottom:3px; }
+    .wk-day.d-today { color:var(--blue); }
+    .wk-day.d-sat   { color:var(--sat-text); }
+    .wk-day.d-norm  { color:var(--text7); }
+    .wk-h { font-size:10px; }
+    .wk-h.h-norm { color:var(--text2); }
+    .wk-h.h-sat  { color:var(--orange); }
+    .wk-x { font-size:8px; margin-top:1px; }
+    .wk-x.x-pos { color:var(--green); }
+    .wk-x.x-neg { color:var(--orange-border); }
+    .wk-x.x-sat { color:var(--orange); }
+    .wk-empty     { font-size:9px; color:var(--text6); }
+    .wk-empty-sat { font-size:9px; color:var(--sat-border); }
+    .wk-live      { font-size:9px; color:var(--green);  animation:pulse 2s infinite; }
+    .wk-live-sat  { font-size:9px; color:var(--orange); animation:pulse 2s infinite; }
+
+    .tabs { display:flex; gap:7px; margin-bottom:12px; }
+    .tab-btn { padding:5px 13px; border-radius:5px; font-size:9px; letter-spacing:1px; background:transparent; border:1px solid var(--border); color:var(--text7); }
+    .tab-btn.active { background:var(--tab-active-bg); border-color:var(--tab-active-border); color:var(--tab-active-color); }
+    .tab-add { padding:5px 13px; border-radius:5px; font-size:9px; letter-spacing:1px; background:transparent; border:1px solid var(--green-faint); color:var(--green-dim); margin-left:auto; }
+
+    .entry-row { border-radius:8px; padding:11px 14px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center; }
+    .entry-row.normal { background:var(--bg3); border:1px solid var(--border2); }
+    .entry-row.sat    { background:var(--sat-bg); border:1px solid var(--sat-border); }
+    .entry-detail { font-size:9px; color:var(--text7); margin-top:3px; line-height:1.6; }
+    .sat-tag  { font-size:8px; color:var(--sat-tag-color); border:1px solid var(--sat-tag-border); padding:1px 5px; border-radius:3px; letter-spacing:0.5px; }
+    .del-btn  { background:transparent; border:none; color:var(--muted); font-size:9px; padding:0; margin-top:1px; }
+    .edit-btn { background:transparent; border:none; color:var(--text5); font-size:12px; padding:0; margin-top:1px; cursor:pointer; }
+    .edit-btn:active { color:var(--blue); }
+    .month-header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-bottom:4px; cursor:pointer; background:var(--bg2); border:1px solid var(--border); border-radius:8px; transition:background 0.15s; }
+    .month-header:active { background:var(--bg3); }
+    .month-chevron { font-size:11px; color:var(--text4); width:12px; }
+    .month-name { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:var(--text); letter-spacing:0.5px; }
+
+    #modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:100; padding:16px; }
+    #modal-box { background:var(--modal-bg); border:1px solid var(--border3); border-radius:12px; padding:22px; width:100%; max-width:320px; }
+    .modal-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; margin-bottom:4px; color:var(--modal-title); }
+    .modal-sat-note { font-size:9px; color:var(--orange); margin-bottom:14px; letter-spacing:1px; }
+    .field-label { font-size:8px; color:var(--text6); letter-spacing:1px; margin-bottom:3px; }
+    .field-input { width:100%; background:var(--field-bg); border:1px solid var(--field-border); color:var(--field-color); padding:7px 10px; border-radius:5px; font-size:13px; outline:none; margin-bottom:10px; }
+    .modal-btns { display:flex; gap:7px; margin-top:16px; }
+    .modal-cancel { flex:1; background:var(--cancel-bg); border:1px solid var(--border3); color:var(--text4); padding:11px; border-radius:7px; font-size:10px; }
+    .modal-save   { flex:1; background:var(--green-bg); border:1px solid var(--green-border); color:var(--green); padding:11px; border-radius:7px; font-size:10px; font-weight:500; }
+
+    #settings-overlay { position:fixed; inset:0; background:var(--settings-overlay); z-index:200; display:flex; flex-direction:column; padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0); transition:opacity 0.2s; }
+    #settings-overlay.hidden { opacity:0; pointer-events:none; }
+    #settings-panel { background:var(--settings-panel); border-bottom:1px solid var(--settings-panel-border); padding:20px 20px 0; flex:1; overflow-y:auto; }
+    .settings-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+    .settings-title  { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:var(--title); }
+    .settings-close  { background:transparent; border:1px solid var(--border3); color:var(--text4); width:32px; height:32px; border-radius:50%; font-size:16px; display:flex; align-items:center; justify-content:center; }
+    .settings-section { margin-bottom:28px; }
+    .settings-section-title { font-size:9px; color:var(--text5); letter-spacing:2px; margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid var(--border); }
+    .settings-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border2); }
+    .settings-row-label { font-size:12px; color:var(--text); }
+    .settings-row-sub { font-size:9px; color:var(--text5); margin-top:2px; line-height:1.5; }
+    .settings-btn { background:var(--bg2); border:1px solid var(--border3); color:var(--text3); padding:8px 14px; border-radius:6px; font-size:10px; letter-spacing:0.5px; }
+    .settings-btn.danger { border-color:var(--red-border); color:var(--red); }
+    .theme-toggle { display:flex; background:var(--bg2); border:1px solid var(--border3); border-radius:8px; overflow:hidden; }
+    .theme-opt { padding:7px 16px; font-size:10px; color:var(--text5); background:transparent; border:none; letter-spacing:0.5px; }
+    .theme-opt.active { background:var(--green-bg); color:var(--green); }
+
+    #settings-gear { flex-shrink:0; background:transparent; border:1.5px solid #3a3a3a; color:#b0a080; width:40px; height:40px; border-radius:10px; font-size:20px; display:flex; align-items:center; justify-content:center; z-index:10; transition:all 0.15s; }
+    #settings-gear:active { background:var(--bg2); color:#d4b870; border-color:#5a5040; }
+    body.light #settings-gear { border-color:#b0a070; color:#9a7a30; }
+    body.light #settings-gear:active { background:var(--bg2); color:#7a5a10; border-color:#8a6a20; }
+
+    #install-bar { position:fixed; bottom:env(safe-area-inset-bottom,0); left:0; right:0; background:var(--install-bg); border-top:1px solid var(--install-border); padding:12px 20px; display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--text4); z-index:50; }
+    #install-bar button { background:var(--green-bg); border:1px solid var(--green-border); color:var(--green); padding:7px 16px; border-radius:6px; font-size:11px; }
+    #install-bar .close-install { background:transparent; border:none; color:var(--text6); font-size:16px; padding:0 4px; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .hidden { display:none !important; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="toast" class="hidden ok"></div>
+
+  <div style="margin-bottom:26px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <div>
+      <div class="header-title">ORE LAVORO <span id="sat-badge" class="sat-badge hidden">SABATO · TUTTO STRAORDINARIO</span></div>
+      <div class="header-sub" id="header-date"></div>
+    </div>
+    <button id="settings-gear" onclick="openSettings()">&#9881;</button>
+  </div>
+
+  <div class="steps" id="steps-bar"></div>
+
+  <button id="main-btn" class="s-idle" onclick="handleMainClick()"></button>
+  <button id="skip-btn"         class="hidden" onclick="handleSkipBreak()">&#8617; FINE DIRETTA &middot; SENZA PAUSA</button>
+  <button id="cancel-break-btn" class="hidden" onclick="handleCancelBreak()">&times; ANNULLA PAUSA</button>
+  <div id="btn-gap"></div>
+
+  <div id="live-card" class="hidden">
+    <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+      <div id="live-status" style="font-size:9px;color:var(--text5);letter-spacing:2px"></div>
+      <div class="dot-live working" id="live-dot"></div>
+    </div>
+    <div class="live-grid">
+      <div><div class="live-label">ENTRATA</div><div class="live-val" id="lv-start">--:--</div></div>
+      <div><div class="live-label">INI. PAUSA</div><div class="live-val" id="lv-bstart">--:--</div></div>
+      <div><div class="live-label">FINE PAUSA</div><div class="live-val" id="lv-bend">--:--</div></div>
+      <div><div class="live-label">USCITA</div><div class="live-val">--:--</div></div>
+    </div>
+    <div class="live-stats" id="live-stats">
+      <div><div class="live-stat-label">LAVORATE</div><div class="live-stat-val" id="lv-worked">--</div></div>
+      <div><div class="live-stat-label" id="lv-extra-label">STRAORDINARI</div><div class="live-stat-val" id="lv-extra">--</div></div>
+    </div>
+    <div id="live-break-info" class="hidden" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--live-border);font-size:10px;color:var(--text5)"></div>
+  </div>
+
+  <div id="banca" class="pos">
+    <div class="label">BANCA ORE TOTALE</div>
+    <div class="value pos" id="banca-val">+0h 00m</div>
+  </div>
+
+  <div id="week-grid-wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:9px;color:var(--text5);letter-spacing:2px">SETTIMANA CORRENTE</div>
+      <div style="display:flex;gap:10px">
+        <span style="font-size:10px;color:var(--text4)" id="wk-worked"></span>
+        <span style="font-size:10px" id="wk-extra"></span>
+      </div>
+    </div>
+    <div class="week-grid" id="week-grid"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-week"    onclick="setView('week')">SETTIMANA</button>
+    <button class="tab-btn"        id="tab-history" onclick="setView('history')">STORICO</button>
+    <button class="tab-add" onclick="openManual()">+ MANUALE</button>
+  </div>
+  <div id="entries-list"></div>
+  <div style="height:20px"></div>
+  <div style="text-align:center;font-size:8px;color:var(--border3);letter-spacing:1px">LUN&ndash;VEN: 8H ORDINARIE &middot; SAB: TUTTO STRAORDINARIO</div>
+</div>
+
+<div id="modal-overlay" class="hidden">
+  <div id="modal-box">
+    <div class="modal-title" id="modal-title">INSERIMENTO MANUALE</div>
+    <div class="modal-sat-note hidden" id="modal-sat-note">&#9733; SABATO &mdash; TUTTO STRAORDINARIO</div>
+    <div class="field-label">DATA</div>
+    <input type="date" id="f-date" class="field-input" oninput="checkModalSat()" />
+    <div class="field-label">ENTRATA</div>
+    <input type="time" id="f-start" class="field-input" />
+    <div class="field-label">INIZIO PAUSA <span style="color:var(--text5)">(opz.)</span></div>
+    <input type="time" id="f-bstart" class="field-input" />
+    <div class="field-label">FINE PAUSA <span style="color:var(--text5)">(opz.)</span></div>
+    <input type="time" id="f-bend" class="field-input" />
+    <div class="field-label">USCITA</div>
+    <input type="time" id="f-end" class="field-input" />
+    <div class="field-label">NOTE (OPZ.)</div>
+    <input type="text" id="f-note" class="field-input" placeholder="..." />
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeManual()">ANNULLA</button>
+      <button class="modal-save"   onclick="saveManual()">SALVA</button>
+    </div>
+  </div>
+</div>
+
+<div id="notif-bar" class="hidden" style="position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 56px);left:0;right:0;background:#0d0d1f;border-top:1px solid #2a2a5a;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#aaa;z-index:49;">
+  <span>&#128276; Attiva avvisi serali per le ore mancanti</span>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button onclick="requestNotifPermission()" style="background:#1a1a4a;border:1px solid #3a3a8a;color:#8a8add;padding:7px 16px;border-radius:6px;font-size:11px;font-family:'DM Mono',monospace;">Attiva</button>
+    <button onclick="document.getElementById('notif-bar').classList.add('hidden')" style="background:transparent;border:none;color:#444;font-size:16px;padding:0 4px;font-family:'DM Mono',monospace;">&times;</button>
+  </div>
+</div>
+
+<div id="settings-overlay" class="hidden">
+  <div id="settings-panel">
+    <div class="settings-header">
+      <div class="settings-title">IMPOSTAZIONI</div>
+      <button class="settings-close" onclick="closeSettings()">&times;</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">ASPETTO</div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Tema</div><div class="settings-row-sub">Chiaro o scuro</div></div>
+        <div class="theme-toggle">
+          <button class="theme-opt" id="theme-dark"  onclick="setTheme('dark')">&#127769; Scuro</button>
+          <button class="theme-opt" id="theme-light" onclick="setTheme('light')">&#9728;&#65039; Chiaro</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">NOTIFICHE</div>
+      <div id="notif-off-row" class="settings-row">
+        <div><div class="settings-row-label">Avviso serale</div><div class="settings-row-sub">Notifica se mancano timbrature</div></div>
+        <button class="settings-btn" onclick="requestNotifPermission()">Attiva</button>
+      </div>
+      <div id="notif-on-row" class="settings-row hidden">
+        <div><div class="settings-row-label">Orario avviso</div><div class="settings-row-sub">Ogni giorno lavorativo</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="time" id="notif-time" onchange="updateNotifTime()" style="background:var(--field-bg);border:1px solid var(--field-border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:12px;outline:none;font-family:'DM Mono',monospace;" />
+          <button class="settings-btn" onclick="disableNotif()">Off</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">DATI</div>
+      <!-- Salvataggio file locale (FSA) -->
+      <div id="fsa-off-row" class="settings-row">
+        <div>
+          <div class="settings-row-label">Salva in Download</div>
+          <div class="settings-row-sub">Un solo file, sempre sovrascritto. Sopravvive alla pulizia del browser.</div>
+        </div>
+        <button class="settings-btn" onclick="fsaSetup()">Collega</button>
+      </div>
+      <div id="fsa-on-row" class="settings-row hidden">
+        <div>
+          <div class="settings-row-label" style="color:var(--green)">&#9679; Salvataggio locale attivo</div>
+          <div class="settings-row-sub" id="fsa-ts-sub">Scritto ad ogni timbratura</div>
+        </div>
+        <button class="settings-btn danger" onclick="fsaDisconnect()">Scollega</button>
+      </div>
+      <div id="fsa-unsupported-row" class="settings-row hidden">
+        <div>
+          <div class="settings-row-label" style="color:var(--text4)">Salva in Download</div>
+          <div class="settings-row-sub">Non supportato su questo browser. Usa Chrome.</div>
+        </div>
+      </div>
+      <!-- Export / Import -->
+      <div class="settings-row">
+        <div><div class="settings-row-label">Esporta JSON</div><div class="settings-row-sub">Scarica snapshot manuale</div></div>
+        <button class="settings-btn" onclick="exportJSON()">&#11015; JSON</button>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Importa JSON</div><div class="settings-row-sub">Carica file esportato in precedenza</div></div>
+        <button class="settings-btn" onclick="document.getElementById('import-input').click()">&#11014; Import</button>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-row-label">Esporta Excel</div><div class="settings-row-sub">Scarica file .xlsx</div></div>
+        <button class="settings-btn" onclick="exportXLSX()">&#11015; Excel</button>
+      </div>
+      <input type="file" id="import-input" accept=".json" style="display:none" onchange="importJSON(event)" />
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">CLOUD SYNC — FIREBASE</div>
+      <!-- Non loggato -->
+      <div id="fb-login-row" class="settings-row">
+        <div>
+          <div class="settings-row-label">Accedi con Google</div>
+          <div class="settings-row-sub">I dati vengono sincronizzati in cloud automaticamente</div>
+        </div>
+        <button class="settings-btn" style="background:var(--blue-bg);border-color:var(--blue-border);color:var(--blue)" onclick="fbSignIn()">&#9654; Accedi</button>
+      </div>
+      <!-- Connesso -->
+      <div id="fb-connected-row" class="settings-row hidden">
+        <div>
+          <div class="settings-row-label" style="color:var(--green)">&#10003; Sincronizzato</div>
+          <div class="settings-row-sub" id="fb-status-sub">In attesa di dati…</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="settings-btn" onclick="fbSyncNow()">&#8593; Ora</button>
+          <button class="settings-btn danger" onclick="fbSignOut()">Esci</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">ZONA PERICOLO</div>
+      <div class="settings-row">
+        <div><div class="settings-row-label" style="color:var(--red)">Cancella tutto</div><div class="settings-row-sub">Elimina tutti i dati salvati</div></div>
+        <button class="settings-btn danger" onclick="clearAllData()">Elimina</button>
+      </div>
+    </div>
+    <div style="height:40px"></div>
+  </div>
+</div>
+
+<div id="install-bar" class="hidden">
+  <span>&#128242; Installa come app sul telefono</span>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button onclick="installPWA()">Installa</button>
+    <button class="close-install" onclick="document.getElementById('install-bar').classList.add('hidden')">&times;</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'ore-lavoro-v2';
+const WORK_STD    = 8 * 60;
+const STATE = { IDLE:'idle', WORKING:'working', BREAK:'onBreak', WORKING2:'working2' };
+const DAYS_IT   = ['Lun','Mar','Mer','Gio','Ven','Sab'];
+const MONTHS_IT = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+
+let log = {};
+let session = { state:STATE.IDLE, startTime:null, breakStartTime:null, endBreakTime:null, breakMin:0 };
+let currentView   = 'week';
+let tickInterval  = null;
+let deferredInstall = null;
+
+// ─── UTILS ────────────────────────────────────────────────────
+function todayKey()   { return new Date().toISOString().slice(0,10); }
+function fmtTime(d)   { return d.toTimeString().slice(0,5); }
+function isSaturday(ds) { return new Date(ds+'T12:00:00').getDay()===6; }
+function stdMin(ds)   { return isSaturday(ds) ? 0 : WORK_STD; }
+
+function fmtDur(m) {
+  if (m===null||m===undefined) return '--';
+  const s=m<0?'-':'+', a=Math.abs(m);
+  return s+Math.floor(a/60)+'h '+String(a%60).padStart(2,'0')+'m';
+}
+function fmtWorked(m) {
+  if (!m&&m!==0) return '--';
+  return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m';
+}
+function fmtDateIT(ds) {
+  const [,mo,d]=ds.split('-');
+  return parseInt(d)+' '+MONTHS_IT[parseInt(mo)-1];
+}
+function toMin(t) { const [h,m]=t.split(':').map(Number); return h*60+m; }
+function floor15(date) { const d=new Date(date); d.setMinutes(Math.floor(d.getMinutes()/15)*15,0,0); return d; }
+function ceil15(date)  { const d=new Date(date); d.setMinutes(Math.ceil(d.getMinutes()/15)*15,0,0); return d; }
+function floor15min(m) { return Math.floor(m/15)*15; }
+function ceil15min(m)  { return Math.ceil(m/15)*15; }
+function getWeekDates() {
+  const today=new Date(), day=today.getDay();
+  const mon=new Date(today);
+  mon.setDate(today.getDate()-((day+6)%7));
+  return Array.from({length:6},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d.toISOString().slice(0,10); });
+}
+
+// ─── FILE SYSTEM ACCESS API — salvataggio in Download ─────────
+// Un solo file ore-lavoro.json, sempre sovrascritto.
+// L'handle viene persistito in IndexedDB e sopravvive al riavvio.
+// Unico prompt: quando Chrome revoca il permesso (tipicamente al
+// riavvio del browser) — mai ad ogni timbratura.
+
+let _fsaHandle=null, _fsaPermGranted=false, _fsaWriteTimer=null;
+
+// IndexedDB helpers per persistere il FileSystemFileHandle
+function _idbOpen(){
+  return new Promise(function(res,rej){
+    const req=indexedDB.open('ore-lavoro-db',1);
+    req.onupgradeneeded=function(e){e.target.result.createObjectStore('kv');};
+    req.onsuccess=function(e){res(e.target.result);};
+    req.onerror=function(){rej(req.error);};
+  });
+}
+async function _idbSet(key,val){
+  const db=await _idbOpen();
+  return new Promise(function(res,rej){
+    const tx=db.transaction('kv','readwrite');
+    tx.objectStore('kv').put(val,key);
+    tx.oncomplete=function(){res();};
+    tx.onerror=function(){rej(tx.error);};
+  });
+}
+async function _idbGet(key){
+  const db=await _idbOpen();
+  return new Promise(function(res,rej){
+    const tx=db.transaction('kv','readonly');
+    const req=tx.objectStore('kv').get(key);
+    req.onsuccess=function(){res(req.result);};
+    req.onerror=function(){rej(req.error);};
+  });
+}
+async function _idbDel(key){
+  const db=await _idbOpen();
+  return new Promise(function(res,rej){
+    const tx=db.transaction('kv','readwrite');
+    tx.objectStore('kv').delete(key);
+    tx.oncomplete=function(){res();};
+    tx.onerror=function(){rej(tx.error);};
+  });
+}
+
+async function fsaInit(){
+  if(!('showSaveFilePicker' in window)){
+    document.getElementById('fsa-unsupported-row').classList.remove('hidden');
+    document.getElementById('fsa-off-row').classList.add('hidden');
+    return;
+  }
+  try { _fsaHandle=await _idbGet('fsa-handle'); } catch(e){}
+  renderFsaStatus();
+}
+
+async function fsaSetup(){
+  if(!('showSaveFilePicker' in window)){showToast('Non supportato su questo browser','warn');return;}
+  try {
+    _fsaHandle=await window.showSaveFilePicker({
+      suggestedName:'ore-lavoro.json',
+      types:[{description:'JSON backup OreLavoro',accept:{'application/json':['.json']}}],
+    });
+    await _idbSet('fsa-handle',_fsaHandle);
+    _fsaPermGranted=true;
+    renderFsaStatus();
+    // Scrivi subito
+    await fsaWriteNow();
+    showToast('\u2713 File collegato — salvataggio automatico attivo');
+  } catch(e){
+    if(e.name!=='AbortError') showToast('Errore selezione file','warn');
+  }
+}
+
+async function fsaEnsurePermission(){
+  if(!_fsaHandle) return false;
+  if(_fsaPermGranted) return true;
+  try {
+    const q=await _fsaHandle.queryPermission({mode:'readwrite'});
+    if(q==='granted'){_fsaPermGranted=true; return true;}
+    const r=await _fsaHandle.requestPermission({mode:'readwrite'});
+    _fsaPermGranted=(r==='granted');
+    return _fsaPermGranted;
+  } catch(e){return false;}
+}
+
+async function fsaWriteNow(){
+  if(!_fsaHandle) return;
+  if(!await fsaEnsurePermission()) return;
+  try {
+    const wr=await _fsaHandle.createWritable();
+    await wr.write(JSON.stringify({log:log,exportedAt:new Date().toISOString(),version:2},null,2));
+    await wr.close();
+    localStorage.setItem('ore-fsa-ts',new Date().toISOString());
+    renderFsaStatus();
+  } catch(e){
+    if(e.name==='NotAllowedError') _fsaPermGranted=false;
+  }
+}
+
+// Debounced: non scrive più di una volta ogni 600ms
+function fsaWrite(){
+  if(!_fsaHandle) return;
+  if(_fsaWriteTimer) clearTimeout(_fsaWriteTimer);
+  _fsaWriteTimer=setTimeout(function(){fsaWriteNow();},600);
+}
+
+async function fsaRead(){
+  if(!_fsaHandle) return null;
+  if(!await fsaEnsurePermission()) return null;
+  try {
+    const file=await _fsaHandle.getFile();
+    return JSON.parse(await file.text());
+  } catch(e){return null;}
+}
+
+function fsaDisconnect(){
+  if(!confirm('Scollegare il file locale? Il file resterà in Download ma non verrà più aggiornato automaticamente.')) return;
+  _fsaHandle=null; _fsaPermGranted=false;
+  _idbDel('fsa-handle').catch(function(){});
+  localStorage.removeItem('ore-fsa-ts');
+  renderFsaStatus();
+  showToast('File locale scollegato');
+}
+
+function renderFsaStatus(){
+  const active=!!_fsaHandle;
+  document.getElementById('fsa-off-row').classList.toggle('hidden', active);
+  document.getElementById('fsa-on-row').classList.toggle('hidden', !active);
+  if(active){
+    const ts=localStorage.getItem('ore-fsa-ts');
+    const sub=document.getElementById('fsa-ts-sub');
+    if(sub&&ts){
+      const d=new Date(ts);
+      sub.textContent='Ultimo salvataggio: '+d.toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    }
+  }
+}
+
+// ─── PERSIST ──────────────────────────────────────────────────
+function save() {
+  try { localStorage.setItem(STORAGE_KEY,JSON.stringify({log,session})); } catch(e){}
+  if(_fbUser) fbWrite(); // Firebase sync silenzioso
+  fsaWrite(); // silenzioso, debounced
+}
+async function loadData() {
+  try {
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){ const p=JSON.parse(raw); log=p.log||{}; if(p.session) session=p.session; return; }
+  } catch(e){}
+  // Fallback FSA se localStorage vuoto o corrotto
+  const backup=await fsaRead();
+  if(backup&&backup.log&&Object.keys(backup.log).length>0){
+    log=backup.log; save();
+    showToast('\u267b Dati ripristinati dal file locale');
+  }
+}
+
+// ─── SESSIONE ORFANA ──────────────────────────────────────────
+function checkOrphanSession() {
+  if(session.state===STATE.IDLE) return;
+  const startDate=session.startTime&&session.startTime.slice(0,10);
+  if(startDate&&startDate!==todayKey()){
+    if(confirm('Sessione aperta il '+fmtDateIT(startDate)+' non completata.\nAnnullare?')){
+      session={state:STATE.IDLE,startTime:null,breakStartTime:null,endBreakTime:null,breakMin:0};
+      save();
+    }
+  }
+}
+
+// ─── TOAST ────────────────────────────────────────────────────
+let _toastTimer=null;
+function showToast(msg,type){
+  type=type||'ok';
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=type;
+  if(_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{el.classList.add('hidden');_toastTimer=null;},2800);
+}
+
+// ─── MAIN CLICK ───────────────────────────────────────────────
+function handleMainClick(){
+  const t=new Date();
+  if(session.state===STATE.IDLE){
+    session={state:STATE.WORKING,startTime:t.toISOString(),breakStartTime:null,endBreakTime:null,breakMin:0};
+    save(); render(); showToast('\u25b6 Entrata ore '+fmtTime(t));
+  } else if(session.state===STATE.WORKING){
+    session={...session,state:STATE.BREAK,breakStartTime:t.toISOString()};
+    save(); render(); showToast('\u23f8 Pausa iniziata ore '+fmtTime(t));
+  } else if(session.state===STATE.BREAK){
+    const bm=Math.max(0,Math.round((ceil15(t)-floor15(new Date(session.breakStartTime)))/60000));
+    session={...session,state:STATE.WORKING2,endBreakTime:t.toISOString(),breakMin:bm};
+    save(); render(); showToast('\u25b6 Ripresa lavoro \u2014 pausa '+bm+'m');
+  } else if(session.state===STATE.WORKING2){
+    _finishDay(t,false);
+  }
+}
+
+// Mezza giornata: fine diretta senza pausa (da STATE.WORKING)
+function handleSkipBreak(){
+  if(session.state!==STATE.WORKING) return;
+  _finishDay(new Date(),true);
+}
+
+// Annulla una pausa gia' iniziata (da STATE.BREAK torna a STATE.WORKING)
+function handleCancelBreak(){
+  if(session.state!==STATE.BREAK) return;
+  session={...session,state:STATE.WORKING,breakStartTime:null};
+  save(); render(); showToast('Pausa annullata \u2014 di nuovo in lavoro');
+}
+
+function _finishDay(t,skipBreak){
+  const bm=skipBreak?0:(session.breakMin||0);
+  const workedMin=Math.max(0,Math.round((floor15(t)-ceil15(new Date(session.startTime)))/60000)-bm);
+  const key=todayKey();
+  const extra=workedMin-stdMin(key);
+  log[key]={
+    start:fmtTime(new Date(session.startTime)),
+    breakStart:(skipBreak||!session.breakStartTime)?'--':fmtTime(new Date(session.breakStartTime)),
+    breakEnd:  (skipBreak||!session.endBreakTime)  ?'--':fmtTime(new Date(session.endBreakTime)),
+    end:fmtTime(t), breakMin:bm, workedMin:workedMin, extra:extra,
+    note:log[key]&&log[key].note||'',
+  };
+  session={state:STATE.IDLE,startTime:null,breakStartTime:null,endBreakTime:null,breakMin:0};
+  save(); render();
+  const label=skipBreak?'Fine diretta':'Uscita';
+  showToast('\u25a0 '+label+': '+fmtDur(extra)+(extra>=0?' straordinari':' mancanti'), extra>=0?'ok':'warn');
+}
+
+// ─── DELETE ───────────────────────────────────────────────────
+function deleteDay(key){
+  if(!confirm('Eliminare questa giornata?')) return;
+  delete log[key]; save(); render(); showToast('Giornata eliminata');
+}
+
+// ─── MANUAL ENTRY ─────────────────────────────────────────────
+let _editingDate=null;
+function openManual(dateToEdit){
+  _editingDate=dateToEdit||null;
+  if(_editingDate&&log[_editingDate]){
+    const e=log[_editingDate];
+    document.getElementById('modal-title').textContent='MODIFICA GIORNATA';
+    document.getElementById('f-date').value=_editingDate;
+    document.getElementById('f-date').disabled=true;
+    document.getElementById('f-start').value=e.start||'';
+    document.getElementById('f-bstart').value=e.breakStart!=='--'?e.breakStart:'';
+    document.getElementById('f-bend').value=e.breakEnd!=='--'?e.breakEnd:'';
+    document.getElementById('f-end').value=e.end||'';
+    document.getElementById('f-note').value=e.note||'';
+  } else {
+    document.getElementById('modal-title').textContent='INSERIMENTO MANUALE';
+    document.getElementById('f-date').value=todayKey();
+    document.getElementById('f-date').disabled=false;
+    ['f-start','f-bstart','f-bend','f-end','f-note'].forEach(function(id){document.getElementById(id).value='';});
+  }
+  checkModalSat();
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function closeManual(){
+  document.getElementById('f-date').disabled=false;
+  _editingDate=null;
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+function checkModalSat(){
+  const date=document.getElementById('f-date').value;
+  document.getElementById('modal-sat-note').classList.toggle('hidden',!(date&&isSaturday(date)));
+}
+function saveManual(){
+  const date  =document.getElementById('f-date').value;
+  const start =document.getElementById('f-start').value;
+  const bstart=document.getElementById('f-bstart').value;
+  const bend  =document.getElementById('f-bend').value;
+  const end   =document.getElementById('f-end').value;
+  const note  =document.getElementById('f-note').value.trim();
+
+  if(!date)  { showToast('Inserisci la data','warn'); return; }
+  if(!start) { showToast("Inserisci l'orario di entrata",'warn'); return; }
+  if(!end)   { showToast("Inserisci l'orario di uscita",'warn'); return; }
+
+  const startM=toMin(start), endM=toMin(end);
+  if(endM<=startM){ showToast("L'uscita deve essere dopo l'entrata",'warn'); return; }
+
+  if(bstart||bend){
+    if(!bstart||!bend){ showToast('Inserisci sia inizio che fine pausa','warn'); return; }
+    const bsM=toMin(bstart), beM=toMin(bend);
+    if(beM<=bsM){ showToast('Fine pausa deve essere dopo inizio pausa','warn'); return; }
+    if(bsM<startM){ showToast("La pausa non puo' iniziare prima dell'entrata",'warn'); return; }
+    if(beM>endM){   showToast("La pausa non puo' finire dopo l'uscita",'warn'); return; }
+  }
+
+  const startCalc=ceil15min(startM), endCalc=floor15min(endM);
+  const breakMin=(bstart&&bend)?Math.max(0,ceil15min(toMin(bend))-floor15min(toMin(bstart))):0;
+  const workedMin=Math.max(0,endCalc-startCalc-breakMin);
+  const extra=workedMin-stdMin(date);
+  log[date]={start:start,breakStart:bstart||'--',breakEnd:bend||'--',end:end,breakMin:breakMin,workedMin:workedMin,extra:extra,note:note};
+  save(); closeManual(); render(); showToast('Giornata salvata \u2713');
+}
+
+// ─── VIEW ─────────────────────────────────────────────────────
+function setView(v){
+  currentView=v;
+  document.getElementById('tab-week').classList.toggle('active',v==='week');
+  document.getElementById('tab-history').classList.toggle('active',v==='history');
+  renderEntries();
+}
+
+// ─── RENDER ───────────────────────────────────────────────────
+function render(){
+  renderHeader(); renderSteps(); renderMainBtn();
+  renderLiveCard(); renderBanca(); renderWeekGrid(); renderEntries();
+}
+
+function renderHeader(){
+  const today=new Date();
+  document.getElementById('header-date').textContent=
+    today.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'}).toUpperCase();
+  document.getElementById('sat-badge').classList.toggle('hidden',today.getDay()!==6);
+}
+
+function renderSteps(){
+  const stepDone={idle:0,working:1,onBreak:2,working2:3}[session.state];
+  const steps=[
+    {label:'INIZIO\nLAVORO',icon:'\u25b6'},
+    {label:'INIZIO\nPAUSA', icon:'\u23f8'},
+    {label:'FINE\nPAUSA',   icon:'\u23f5'},
+    {label:'FINE\nGIORNATA',icon:'\u25a0'},
+  ];
+  document.getElementById('steps-bar').innerHTML=steps.map(function(s,i){
+    const done=i<stepDone, active=i===stepDone;
+    const cc=done?'done':active?'active':'';
+    const lc=done?'done':'';
+    const line=i<3?'<div class="step-line '+lc+'"></div>':'';
+    return '<div class="step-wrap"><div class="step-node">'
+      +'<div class="step-circle '+cc+'">'+(done?'\u2713':s.icon)+'</div>'
+      +'<div class="step-label '+cc+'">'+s.label+'</div>'
+      +'</div>'+line+'</div>';
+  }).join('');
+}
+
+function renderMainBtn(){
+  const cfgs={};
+  cfgs[STATE.IDLE]    ={icon:'\u25b6',text:'INIZIA LAVORO',cls:'s-idle'};
+  cfgs[STATE.WORKING] ={icon:'\u23f8',text:'INIZIO PAUSA', cls:'s-working'};
+  cfgs[STATE.BREAK]   ={icon:'\u23f5',text:'FINE PAUSA',   cls:'s-break'};
+  cfgs[STATE.WORKING2]={icon:'\u25a0',text:'FINE GIORNATA',cls:'s-working'};
+  const c=cfgs[session.state];
+  const btn=document.getElementById('main-btn');
+  btn.className=c.cls;
+  btn.innerHTML='<span style="font-size:20px">'+c.icon+'</span>'+c.text;
+  document.getElementById('skip-btn').classList.toggle('hidden',session.state!==STATE.WORKING);
+  document.getElementById('cancel-break-btn').classList.toggle('hidden',session.state!==STATE.BREAK);
+  const noSec=(session.state===STATE.IDLE||session.state===STATE.WORKING2);
+  document.getElementById('btn-gap').style.height=noSec?'6px':'0';
+}
+
+function calcLive(){
+  if(session.state===STATE.IDLE)  return {worked:null,extra:null};
+  if(session.state===STATE.BREAK) return {worked:null,extra:null,onBreak:true};
+  const bm=session.breakMin||0;
+  const worked=Math.max(0,Math.round((floor15(new Date())-ceil15(new Date(session.startTime)))/60000)-bm);
+  return {worked:worked,extra:worked-stdMin(todayKey())};
+}
+
+function renderLiveCard(){
+  const isActive=session.state!==STATE.IDLE;
+  document.getElementById('live-card').classList.toggle('hidden',!isActive);
+  if(!isActive) return;
+  const isBreak=session.state===STATE.BREAK;
+  const isSat=isSaturday(todayKey());
+  document.getElementById('live-status').textContent=isBreak?'\u23f8 IN PAUSA':'\u25b6 IN CORSO';
+  document.getElementById('live-dot').className='dot-live '+(isBreak?'on-break':'working');
+  function set(id,val){
+    const el=document.getElementById(id);
+    if(val){el.textContent=val;el.classList.add('set');}
+    else {el.textContent='--:--';el.classList.remove('set');}
+  }
+  set('lv-start', session.startTime      ?fmtTime(new Date(session.startTime)):null);
+  set('lv-bstart',session.breakStartTime ?fmtTime(new Date(session.breakStartTime)):null);
+  set('lv-bend',  session.endBreakTime   ?fmtTime(new Date(session.endBreakTime)):null);
+  const stats=document.getElementById('live-stats');
+  const binfo=document.getElementById('live-break-info');
+  if(isBreak){
+    stats.classList.add('hidden'); binfo.classList.remove('hidden');
+    const bm=Math.round((new Date()-new Date(session.breakStartTime))/60000);
+    binfo.textContent='Pausa in corso da '+bm+' min';
+  } else {
+    stats.classList.remove('hidden'); binfo.classList.add('hidden');
+    const res=calcLive();
+    document.getElementById('lv-worked').textContent=fmtWorked(res.worked);
+    const extEl=document.getElementById('lv-extra');
+    extEl.textContent=fmtDur(res.extra);
+    extEl.style.color=res.extra>=0?(isSat?'var(--orange)':'var(--green)'):'var(--orange-border)';
+    document.getElementById('lv-extra-label').textContent=isSat?'STRAORD. (SAB)':'STRAORDINARI';
+  }
+}
+
+function renderBanca(){
+  const total=Object.values(log).reduce(function(s,e){return s+(e&&e.extra!=null?e.extra:0);},0);
+  const banca=document.getElementById('banca');
+  const val=document.getElementById('banca-val');
+  banca.classList.toggle('pos',total>=0); banca.classList.toggle('neg',total<0);
+  val.textContent=fmtDur(total);
+  val.classList.toggle('pos',total>=0); val.classList.toggle('neg',total<0);
+}
+
+function renderWeekGrid(){
+  const dates=getWeekDates();
+  const isActive=session.state!==STATE.IDLE;
+  let totWorked=0,totExtra=0;
+  document.getElementById('week-grid').innerHTML=dates.map(function(date,i){
+    const entry=log[date];
+    const isToday=date===todayKey(), isSat=i===5;
+    if(entry){totWorked+=entry.workedMin||0; totExtra+=entry.extra||0;}
+    const cellCls=isToday?'wk-today':isSat?'wk-sat':'wk-normal';
+    const dayCls =isToday?'d-today':isSat?'d-sat':'d-norm';
+    let content;
+    if(isToday&&isActive){
+      content='<div class="'+(isSat?'wk-live-sat':'wk-live')+'">live</div>';
+    } else if(entry){
+      const hCls=isSat?'h-sat':'h-norm';
+      const xVal=(entry.extra>=0?'+':'')+Number(entry.extra/60).toFixed(1)+'h';
+      const xCls=isSat?'x-sat':entry.extra>=0?'x-pos':'x-neg';
+      content='<div class="wk-h '+hCls+'">'+Math.floor(entry.workedMin/60)+'h'+String(entry.workedMin%60).padStart(2,'0')+'</div>'
+             +'<div class="wk-x '+xCls+'">'+xVal+'</div>';
+    } else {
+      content='<div class="'+(isSat?'wk-empty-sat':'wk-empty')+'">\u2014</div>';
+    }
+    return '<div class="week-cell '+cellCls+'"><div class="wk-day '+dayCls+'">'+DAYS_IT[i]+'</div>'+content+'</div>';
+  }).join('');
+  document.getElementById('wk-worked').textContent=fmtWorked(totWorked);
+  const wkX=document.getElementById('wk-extra');
+  wkX.textContent=fmtDur(totExtra);
+  wkX.style.color=totExtra>=0?'var(--green)':'var(--orange-border)';
+}
+
+// ─── ENTRY LIST ───────────────────────────────────────────────
+var _openMonths={};
+function renderEntryRow(date,entry,label,isToday,isSat){
+  const labelColor=isToday?'var(--blue)':isSat?'var(--sat-text)':'var(--text4)';
+  const satTag=isSat?'<span class="sat-tag">STR.</span>':'';
+  var detail='',right='<div style="font-size:10px;color:var(--muted)">\u2014</div>';
+  if(entry){
+    const hasBreak=entry.breakStart!=='--';
+    const ts=hasBreak
+      ?'<span style="color:var(--green-dim)">'+entry.start+'</span> \u2192 <span style="color:var(--orange)">'+entry.breakStart+'</span> \u23f8 <span style="color:var(--orange)">'+entry.breakEnd+'</span> \u2192 <span style="color:var(--green-dim)">'+entry.end+'</span>'
+      :'<span style="color:var(--green-dim)">'+entry.start+'</span> \u2192 <span style="color:var(--green-dim)">'+entry.end+'</span> <span style="color:var(--text6)">\u00b7 senza pausa</span>';
+    const bInfo=(hasBreak&&entry.breakMin>0)?' <span style="color:var(--green-faint)">\u00b7 pausa '+entry.breakMin+'m</span>':'';
+    const nInfo=entry.note?' <span style="color:var(--text6)">\u00b7 '+entry.note+'</span>':'';
+    detail='<div class="entry-detail">'+ts+bInfo+nInfo+'</div>';
+    const hColor=isSat?'var(--orange)':'var(--text2)';
+    const xColor=isSat?'var(--orange)':entry.extra>=0?'var(--green)':'var(--orange-border)';
+    right='<div style="font-size:13px;color:'+hColor+'">'+fmtWorked(entry.workedMin)+'</div>'
+         +'<div style="font-size:10px;color:'+xColor+'">'+fmtDur(entry.extra)+'</div>'
+         +'<div style="display:flex;gap:6px;margin-top:2px">'
+         +'<button class="edit-btn" onclick="openManual(\''+date+'\')">&#9998;</button>'
+         +'<button class="del-btn"  onclick="deleteDay(\''+date+'\')">&times;</button>'
+         +'</div>';
+  }
+  return '<div class="entry-row '+(isSat?'sat':'normal')+' row-h">'
+    +'<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px">'
+    +'<div style="font-size:11px;color:'+labelColor+'">'+label+'</div>'+satTag+'</div>'+detail+'</div>'
+    +'<div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-left:12px">'+right+'</div>'
+    +'</div>';
+}
+function toggleMonth(mk){
+  _openMonths[mk]=!_openMonths[mk]; renderEntries();
+}
+function renderEntries(){
+  const list=document.getElementById('entries-list');
+  if(currentView==='week'){
+    list.innerHTML=getWeekDates().map(function(date,i){
+      return renderEntryRow(date,log[date]||null,DAYS_IT[i]+' '+fmtDateIT(date),date===todayKey(),i===5);
+    }).join('');
+    return;
+  }
+  const all=Object.entries(log).sort(function(a,b){return b[0].localeCompare(a[0]);});
+  if(!all.length){ list.innerHTML='<div style="text-align:center;color:var(--muted);font-size:11px;padding:24px">Nessun dato ancora.</div>'; return; }
+  const byMonth={};
+  all.forEach(function(pair){ var mk=pair[0].slice(0,7); if(!byMonth[mk]) byMonth[mk]=[]; byMonth[mk].push(pair); });
+  const monthKeys=Object.keys(byMonth).sort(function(a,b){return b.localeCompare(a);});
+  if(!Object.keys(_openMonths).length&&monthKeys.length) _openMonths[monthKeys[0]]=true;
+  list.innerHTML=monthKeys.map(function(mk){
+    const parts=mk.split('-');
+    const monthName=MONTHS_IT[parseInt(parts[1])-1]+' '+parts[0];
+    const entries=byMonth[mk];
+    const isOpen=!!_openMonths[mk];
+    const totW=entries.reduce(function(s,p){return s+(p[1].workedMin||0);},0);
+    const totX=entries.reduce(function(s,p){return s+(p[1].extra||0);},0);
+    const xColor=totX>=0?'var(--green)':'var(--orange-border)';
+    var html='<div class="month-header" onclick="toggleMonth(\''+mk+'\')">'
+      +'<div style="display:flex;align-items:center;gap:8px"><span class="month-chevron">'+(isOpen?'\u25be':'\u25b8')+'</span><span class="month-name">'+monthName+'</span></div>'
+      +'<div style="display:flex;gap:10px;align-items:center">'
+      +'<span style="font-size:10px;color:var(--text4)">'+fmtWorked(totW)+'</span>'
+      +'<span style="font-size:10px;color:'+xColor+'">'+fmtDur(totX)+'</span></div></div>';
+    if(isOpen){
+      html+=entries.map(function(pair){
+        var date=pair[0], entry=pair[1];
+        var d=new Date(date+'T12:00:00');
+        var label=d.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});
+        return renderEntryRow(date,entry,label,false,isSaturday(date));
+      }).join('');
+    }
+    return html;
+  }).join('');
+}
+
+// ─── THEME ────────────────────────────────────────────────────
+function setTheme(t){
+  localStorage.setItem('ore-theme',t);
+  document.body.classList.toggle('light',t==='light');
+  document.getElementById('theme-dark').classList.toggle('active',t==='dark');
+  document.getElementById('theme-light').classList.toggle('active',t==='light');
+}
+function initTheme(){ setTheme(localStorage.getItem('ore-theme')||'dark'); }
+
+// ─── SETTINGS ─────────────────────────────────────────────────
+function openSettings(){
+  document.getElementById('settings-overlay').classList.remove('hidden');
+  renderNotifSettings();
+  setTheme(localStorage.getItem('ore-theme')||'dark');
+  renderFbStatus();
+  renderFsaStatus();
+}
+function closeSettings(){
+  document.getElementById('settings-overlay').classList.add('hidden');
+}
+
+// ─── JSON IMPORT/EXPORT ───────────────────────────────────────
+function exportJSON(){
+  const url=URL.createObjectURL(new Blob([JSON.stringify({log:log,exportedAt:new Date().toISOString(),version:2},null,2)],{type:'application/json'}));
+  const a=Object.assign(document.createElement('a'),{href:url,download:'ore-lavoro-'+todayKey()+'.json'});
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  showToast('\u2b07 Export JSON completato');
+}
+function importJSON(event){
+  const file=event.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try {
+      const data=JSON.parse(e.target.result);
+      const imported=data.log||data;
+      if(typeof imported!=='object') throw new Error();
+      log=Object.assign({},log,imported); save(); render();
+      showToast('\u2b06 Importati '+Object.keys(imported).length+' giorni');
+    } catch(err){ showToast('Errore nel file JSON','warn'); }
+  };
+  reader.readAsText(file); event.target.value='';
+}
+
+// ─── XLSX EXPORT ──────────────────────────────────────────────
+function exportXLSX(){
+  const rows=[['Data','Giorno','Entrata','Inizio Pausa','Fine Pausa','Uscita','Pausa (min)','Ore Lavorate','Straordinari (min)','Straordinari','Note']];
+  Object.entries(log).sort(function(a,b){return a[0].localeCompare(b[0]);}).forEach(function(pair){
+    const date=pair[0], e=pair[1];
+    const dayName=new Date(date+'T12:00:00').toLocaleDateString('it-IT',{weekday:'long'});
+    const xAbs=Math.abs(e.extra||0);
+    const extraH=(e.extra>=0?'+':'-')+Math.floor(xAbs/60)+'h '+String(xAbs%60).padStart(2,'0')+'m';
+    rows.push([date,dayName,e.start||'',e.breakStart!=='--'?e.breakStart:'',e.breakEnd!=='--'?e.breakEnd:'',e.end||'',
+      e.breakMin||0,Math.floor((e.workedMin||0)/60)+'h '+String((e.workedMin||0)%60).padStart(2,'0')+'m',e.extra||0,extraH,e.note||'']);
+  });
+  if(typeof XLSX!=='undefined'){
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[12,12,9,12,12,9,12,13,16,13,20].map(function(w){return {wch:w};});
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Ore Lavoro');
+    XLSX.writeFile(wb,'ore-lavoro-'+todayKey()+'.xlsx');
+    showToast('\u2b07 Excel esportato \u2713');
+  } else {
+    const csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+    const a=Object.assign(document.createElement('a'),{href:url,download:'ore-lavoro-'+todayKey()+'.csv'});
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    showToast('\u2b07 CSV esportato (SheetJS non disponibile)');
+  }
+}
+
+// ─── FIREBASE — sync cloud ────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyD-7Ns9zoDwvyaGuVGxV6B04N7B6x8cTuE",
+  authDomain:        "app-ore-lavoro-98c7a.firebaseapp.com",
+  projectId:         "app-ore-lavoro-98c7a",
+  storageBucket:     "app-ore-lavoro-98c7a.firebasestorage.app",
+  messagingSenderId: "1000900942626",
+  appId:             "1:1000900942626:web:c54001413758e98ea0237b"
+};
+
+let _fbAuth = null, _fbDb = null, _fbUser = null;
+let _fbSyncTimer = null, _fbUnsub = null;
+
+function fbInit() {
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    _fbAuth = firebase.auth();
+    _fbDb   = firebase.firestore();
+    // Persistenza automatica — il token sopravvive alla chiusura dell'app
+    _fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
+    // Ascolta cambi auth: gestisce login/logout e ripristino automatico del token
+    _fbAuth.onAuthStateChanged(function(user) {
+      _fbUser = user;
+      renderFbStatus();
+      if (user) {
+        fbStartListener();
+      } else {
+        if (_fbUnsub) { _fbUnsub(); _fbUnsub = null; }
+      }
+    });
+  } catch(e) {
+    console.warn('Firebase init error:', e);
+  }
+}
+
+// ── Auth ──────────────────────────────────────────────────────
+function fbSignIn() {
+  if (!_fbAuth) return;
+  _fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+    .catch(function(e) {
+      if (e.code !== 'auth/popup-closed-by-user') showToast('Errore login Google', 'warn');
+    });
+}
+function fbSignOut() {
+  if (!confirm('Disconnetterti? I dati locali rimangono.')) return;
+  if (_fbUnsub) { _fbUnsub(); _fbUnsub = null; }
+  _fbAuth.signOut().then(function() {
+    _fbUser = null; renderFbStatus(); showToast('Disconnesso da Firebase');
+  });
+}
+
+// ── Firestore ─────────────────────────────────────────────────
+function fbDocRef() {
+  if (!_fbDb || !_fbUser) return null;
+  return _fbDb.doc('users/' + _fbUser.uid + '/data/timbrature');
+}
+
+function fbStartListener() {
+  if (_fbUnsub) _fbUnsub();
+  const ref = fbDocRef(); if (!ref) return;
+  _fbUnsub = ref.onSnapshot(function(snap) {
+    if (!snap.exists) return;
+    const remote = snap.data();
+    if (!remote || !remote.log) return;
+    const remoteAt = remote.updatedAt ? remote.updatedAt.toDate() : new Date(0);
+    const localAt  = (function(){ try { return new Date(JSON.parse(localStorage.getItem('ore-fb-ts')||'0')); } catch { return new Date(0); } })();
+    if (remoteAt > localAt) {
+      const merged = Object.assign({}, log, remote.log);
+      if (JSON.stringify(merged) !== JSON.stringify(log)) {
+        log = merged;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({log, session})); } catch {}
+        localStorage.setItem('ore-fb-ts', remoteAt.toISOString());
+        render();
+        showToast('\u2601 Dati sincronizzati da Firebase');
+      }
+    }
+    renderFbStatus();
+  }, function(e){ console.warn('Firestore listener error:', e); });
+}
+
+function fbWrite() {
+  if (!_fbUser || !_fbDb) return;
+  if (_fbSyncTimer) clearTimeout(_fbSyncTimer);
+  _fbSyncTimer = setTimeout(async function() {
+    try {
+      const ref = fbDocRef(); if (!ref) return;
+      await ref.set({ log: log, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      localStorage.setItem('ore-fb-ts', new Date().toISOString());
+      renderFbStatus();
+    } catch(e) { console.warn('Firestore write error:', e); }
+  }, 800);
+}
+
+function fbSyncNow() {
+  if (!_fbUser) { showToast('Non sei loggato', 'warn'); return; }
+  fbWrite(); showToast('\u2601 Sincronizzazione in corso\u2026');
+}
+
+// ── UI ────────────────────────────────────────────────────────
+function renderFbStatus() {
+  const loginRow = document.getElementById('fb-login-row');
+  const connRow  = document.getElementById('fb-connected-row');
+  if (_fbUser) {
+    if (loginRow) loginRow.classList.add('hidden');
+    if (connRow)  connRow.classList.remove('hidden');
+    const sub = document.getElementById('fb-status-sub');
+    if (sub) {
+      const ts = localStorage.getItem('ore-fb-ts');
+      sub.textContent = _fbUser.email + (ts
+        ? ' \u00b7 sync ' + new Date(ts).toLocaleString('it-IT', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+        : ' \u00b7 in attesa\u2026');
+    }
+  } else {
+    if (loginRow) loginRow.classList.remove('hidden');
+    if (connRow)  connRow.classList.add('hidden');
+  }
+}
+
+function initFirebase() { fbInit(); }
+
+// ─── CLEAR ALL ────────────────────────────────────────────────
+function clearAllData(){
+  if(!confirm('Sei sicuro? Tutti i dati verranno eliminati definitivamente.')) return;
+  log={}; session={state:STATE.IDLE,startTime:null,breakStartTime:null,endBreakTime:null,breakMin:0};
+  save(); render(); closeSettings(); showToast('Dati eliminati');
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────
+const NOTIF_KEY='ore-notif-settings';
+function loadNotifSettings(){try{return JSON.parse(localStorage.getItem(NOTIF_KEY))||{enabled:false,hour:20,minute:0};}catch{return {enabled:false,hour:20,minute:0};}}
+function saveNotifSettings(s){try{localStorage.setItem(NOTIF_KEY,JSON.stringify(s));}catch{}}
+async function requestNotifPermission(){
+  if(!('Notification' in window)){showToast('Notifiche non supportate','warn');return;}
+  const perm=await Notification.requestPermission();
+  if(perm==='granted'){
+    const s=loadNotifSettings(); s.enabled=true; saveNotifSettings(s);
+    scheduleEveningCheck();
+    document.getElementById('notif-bar').classList.add('hidden');
+    renderNotifSettings(); showToast('\ud83d\udd14 Notifiche attivate \u2713');
+  } else {
+    showToast('Permesso notifiche negato','warn');
+  }
+}
+function scheduleEveningCheck(){
+  if(window._notifTimeout) clearTimeout(window._notifTimeout);
+  const s=loadNotifSettings();
+  if(!s.enabled||Notification.permission!=='granted') return;
+  const now=new Date(), target=new Date();
+  target.setHours(s.hour,s.minute,0,0);
+  if(target<=now) target.setDate(target.getDate()+1);
+  window._notifTimeout=setTimeout(function(){fireEveningCheck();scheduleEveningCheck();},target-now);
+}
+function fireEveningCheck(){
+  const key=todayKey(), dow=new Date().getDay();
+  if(dow===0) return;
+  const entry=log[key], isActive=session.state!==STATE.IDLE;
+  var title='',body='';
+  if(isActive){
+    title='\u26a0\ufe0f Hai dimenticato di timbrare!';
+    var msgs={working:"Hai timbrato l'entrata ma non la pausa.",onBreak:'Sei ancora in pausa!',working2:"Hai ripreso ma non hai timbrato l'uscita."};
+    body=msgs[session.state]||'Completa la giornata.';
+  } else if(!entry){
+    title='\ud83d\udccb Nessuna ora registrata oggi';
+    body=dow===6?'Hai lavorato sabato? Registra le ore.':'Nessuna registrazione per oggi.';
+  } else { return; }
+  if('serviceWorker' in navigator&&navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({type:'NOTIFY',title:title,body:body});
+  } else {
+    new Notification(title,{body:body,icon:'./icon-192.png',badge:'./icon-192.png'});
+  }
+}
+function renderNotifSettings(){
+  const s=loadNotifSettings();
+  const enabled=s.enabled&&Notification.permission==='granted';
+  const offRow=document.getElementById('notif-off-row');
+  const onRow=document.getElementById('notif-on-row');
+  if(offRow) offRow.classList.toggle('hidden',enabled);
+  if(onRow)  onRow.classList.toggle('hidden',!enabled);
+  if(enabled){
+    const el=document.getElementById('notif-time');
+    if(el) el.value=String(s.hour).padStart(2,'0')+':'+String(s.minute).padStart(2,'0');
+  }
+}
+function updateNotifTime(){
+  const val=document.getElementById('notif-time').value; if(!val) return;
+  const parts=val.split(':');
+  const s=loadNotifSettings(); s.hour=parseInt(parts[0]); s.minute=parseInt(parts[1]); saveNotifSettings(s);
+  scheduleEveningCheck(); showToast('\ud83d\udd14 Avviso impostato alle '+val);
+}
+function disableNotif(){
+  const s=loadNotifSettings(); s.enabled=false; saveNotifSettings(s);
+  if(window._notifTimeout) clearTimeout(window._notifTimeout);
+  renderNotifSettings(); showToast('Notifiche disattivate');
+}
+function initNotifications(){
+  const s=loadNotifSettings();
+  if(s.enabled&&Notification.permission==='granted'){
+    renderNotifSettings(); scheduleEveningCheck();
+  } else if(Notification.permission==='default'&&!localStorage.getItem('ore-notif-asked')){
+    localStorage.setItem('ore-notif-asked','1');
+    document.getElementById('notif-bar').classList.remove('hidden');
+  }
+}
+
+// ─── TICK ─────────────────────────────────────────────────────
+function startTick(){
+  if(tickInterval) clearInterval(tickInterval);
+  tickInterval=setInterval(function(){ if(session.state!==STATE.IDLE) renderLiveCard(); },10000);
+}
+
+// ─── INSTALL ──────────────────────────────────────────────────
+window.addEventListener('beforeinstallprompt',function(e){
+  e.preventDefault(); deferredInstall=e;
+  document.getElementById('install-bar').classList.remove('hidden');
+});
+window.addEventListener('appinstalled',function(){
+  document.getElementById('install-bar').classList.add('hidden');
+});
+function installPWA(){
+  if(!deferredInstall) return;
+  deferredInstall.prompt();
+  deferredInstall.userChoice.then(function(){
+    deferredInstall=null;
+    document.getElementById('install-bar').classList.add('hidden');
+  });
+}
+
+// ─── SERVICE WORKER ───────────────────────────────────────────
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js');});
+}
+
+// ─── SHORTCUT ACTIONS (da ?action=xxx) ───────────────────────
+// Le App Shortcuts del manifest aprono l'app con un parametro URL.
+// L'azione viene eseguita automaticamente se valida per lo stato corrente,
+// poi il parametro viene rimosso dalla barra degli indirizzi.
+function handleShortcutAction(){
+  const params=new URLSearchParams(window.location.search);
+  const action=params.get('action');
+  if(!action) return;
+  // Rimuovi il parametro dall'URL senza ricaricare la pagina
+  const cleanUrl=window.location.pathname;
+  window.history.replaceState({},'',cleanUrl);
+
+  const labels={
+    start:    {need:STATE.IDLE,     label:'Entrata'},
+    break:    {need:STATE.WORKING,  label:'Inizio pausa'},
+    endbreak: {need:STATE.BREAK,    label:'Fine pausa'},
+    end:      {need:STATE.WORKING2, label:'Fine giornata'},
+  };
+  const cfg=labels[action];
+  if(!cfg){ showToast('Azione sconosciuta','warn'); return; }
+
+  if(session.state!==cfg.need){
+    // Mostra un toast contestuale invece di eseguire l'azione sbagliata
+    const stateLabels={
+      idle:     'App in attesa — premi Inizia lavoro',
+      working:  'Sei in lavoro — usa Inizio pausa o Fine giornata',
+      onBreak:  'Sei in pausa — usa Fine pausa',
+      working2: 'Sei rientrato — usa Fine giornata',
+    };
+    showToast(stateLabels[session.state]||'Azione non disponibile ora','warn');
+    return;
+  }
+  // Esegui l'azione
+  if(action==='start')    handleMainClick();
+  else if(action==='break')    handleMainClick();
+  else if(action==='endbreak') handleMainClick();
+  else if(action==='end')      handleMainClick();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+async function init(){
+  await fsaInit();       // IndexedDB handle + UI prima di loadData
+  await loadData();      // localStorage → FSA fallback
+  checkOrphanSession();
+  initTheme();
+  render();
+  startTick();
+  initNotifications();
+  initFirebase();
+  handleShortcutAction();
+}
+init();
+</script>
+</body>
+</html>
