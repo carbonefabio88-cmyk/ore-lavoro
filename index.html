@@ -361,11 +361,11 @@
 
     <div class="settings-section">
       <div class="settings-section-title">DATI</div>
-      <!-- Salvataggio file locale (FSA) -->
-      <div id="fsa-off-row" class="settings-row">
+      <!-- Backup automatico locale (OPFS su mobile, FSA su desktop) -->
+      <div id="fsa-off-row" class="settings-row hidden">
         <div>
           <div class="settings-row-label">Salva in Download</div>
-          <div class="settings-row-sub">Un solo file, sempre sovrascritto. Sopravvive alla pulizia del browser.</div>
+          <div class="settings-row-sub">Un solo file, sempre sovrascritto. Solo su desktop.</div>
         </div>
         <button class="settings-btn" onclick="fsaSetup()">Collega</button>
       </div>
@@ -376,11 +376,12 @@
         </div>
         <button class="settings-btn danger" onclick="fsaDisconnect()">Scollega</button>
       </div>
-      <div id="fsa-unsupported-row" class="settings-row hidden">
+      <div id="opfs-row" class="settings-row hidden">
         <div>
-          <div class="settings-row-label" style="color:var(--text4)">Salva in Download</div>
-          <div class="settings-row-sub">Non supportato su questo browser. Usa Chrome.</div>
+          <div class="settings-row-label" style="color:var(--green)">&#9679; Backup automatico attivo</div>
+          <div class="settings-row-sub" id="opfs-ts-sub">Scritto silenziosamente ad ogni timbratura</div>
         </div>
+        <button class="settings-btn" onclick="opfsImport()">&#8635; Ripristina</button>
       </div>
       <!-- Export / Import -->
       <div class="settings-row">
@@ -529,95 +530,147 @@ async function _idbDel(key){
   });
 }
 
-async function fsaInit(){
-  if(!('showSaveFilePicker' in window)){
-    document.getElementById('fsa-unsupported-row').classList.remove('hidden');
-    document.getElementById('fsa-off-row').classList.add('hidden');
-    return;
-  }
-  try { _fsaHandle=await _idbGet('fsa-handle'); } catch(e){}
+// ─── STORAGE LOCALE: OPFS (mobile) + FSA (desktop) ───────────
+// Su Android/mobile: OPFS — silenzioso, automatico, nessun prompt
+// Su desktop Chrome: FSA — file in Download, sempre lo stesso file
+// I due sistemi coesistono: fsaWrite() chiama entrambi se disponibili.
+
+const _isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+
+// ── OPFS (funziona su Android) ────────────────────────────────
+let _opfsTimer = null;
+async function opfsWrite() {
+  if (!('storage' in navigator && 'getDirectory' in navigator.storage)) return;
+  if (_opfsTimer) clearTimeout(_opfsTimer);
+  _opfsTimer = setTimeout(async function() {
+    try {
+      const root = await navigator.storage.getDirectory();
+      const fh   = await root.getFileHandle('ore-lavoro.json', { create:true });
+      const wr   = await fh.createWritable();
+      await wr.write(JSON.stringify({ log, exportedAt:new Date().toISOString(), version:2 }, null, 2));
+      await wr.close();
+      localStorage.setItem('ore-opfs-ts', new Date().toISOString());
+      renderFsaStatus();
+    } catch(e) { /* silenzioso */ }
+  }, 600);
+}
+async function opfsRead() {
+  if (!('storage' in navigator && 'getDirectory' in navigator.storage)) return null;
+  try {
+    const root = await navigator.storage.getDirectory();
+    const fh   = await root.getFileHandle('ore-lavoro.json');
+    const file = await fh.getFile();
+    return JSON.parse(await file.text());
+  } catch(e) { return null; }
+}
+async function opfsImport() {
+  const data = await opfsRead();
+  if (!data || !data.log) { showToast('Nessun backup locale trovato', 'warn'); return; }
+  const count = Object.keys(data.log).length;
+  if (!count) { showToast('Il backup è vuoto', 'warn'); return; }
+  const ts = data.exportedAt
+    ? new Date(data.exportedAt).toLocaleString('it-IT', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
+    : '—';
+  if (!confirm('Ripristinare ' + count + ' giorni dal backup locale?\nSalvato il: ' + ts + '\n\nI dati correnti verranno sostituiti.')) return;
+  log = data.log; save(); render(); showToast('\u267b Ripristinati ' + count + ' giorni');
+}
+
+// ── FSA (solo desktop Chrome) ─────────────────────────────────
+async function fsaInit() {
+  if (_isMobile || !('showSaveFilePicker' in window)) return; // non disponibile su mobile
+  try { _fsaHandle = await _idbGet('fsa-handle'); } catch(e) {}
   renderFsaStatus();
 }
-
-async function fsaSetup(){
-  if(!('showSaveFilePicker' in window)){showToast('Non supportato su questo browser','warn');return;}
+async function fsaSetup() {
+  if (!('showSaveFilePicker' in window)) { showToast('Disponibile solo su Chrome desktop', 'warn'); return; }
   try {
-    _fsaHandle=await window.showSaveFilePicker({
-      suggestedName:'ore-lavoro.json',
-      types:[{description:'JSON backup OreLavoro',accept:{'application/json':['.json']}}],
+    _fsaHandle = await window.showSaveFilePicker({
+      suggestedName: 'ore-lavoro.json',
+      types: [{ description:'JSON backup OreLavoro', accept:{'application/json':['.json']} }],
     });
-    await _idbSet('fsa-handle',_fsaHandle);
-    _fsaPermGranted=true;
+    await _idbSet('fsa-handle', _fsaHandle);
+    _fsaPermGranted = true;
     renderFsaStatus();
-    // Scrivi subito
     await fsaWriteNow();
     showToast('\u2713 File collegato — salvataggio automatico attivo');
-  } catch(e){
-    if(e.name!=='AbortError') showToast('Errore selezione file','warn');
+  } catch(e) {
+    if (e.name !== 'AbortError') showToast('Errore selezione file', 'warn');
   }
 }
-
-async function fsaEnsurePermission(){
-  if(!_fsaHandle) return false;
-  if(_fsaPermGranted) return true;
+async function fsaEnsurePermission() {
+  if (!_fsaHandle) return false;
+  if (_fsaPermGranted) return true;
   try {
-    const q=await _fsaHandle.queryPermission({mode:'readwrite'});
-    if(q==='granted'){_fsaPermGranted=true; return true;}
-    const r=await _fsaHandle.requestPermission({mode:'readwrite'});
-    _fsaPermGranted=(r==='granted');
+    const q = await _fsaHandle.queryPermission({ mode:'readwrite' });
+    if (q === 'granted') { _fsaPermGranted = true; return true; }
+    const r = await _fsaHandle.requestPermission({ mode:'readwrite' });
+    _fsaPermGranted = (r === 'granted');
     return _fsaPermGranted;
-  } catch(e){return false;}
+  } catch(e) { return false; }
 }
-
-async function fsaWriteNow(){
-  if(!_fsaHandle) return;
-  if(!await fsaEnsurePermission()) return;
+async function fsaWriteNow() {
+  if (!_fsaHandle) return;
+  if (!await fsaEnsurePermission()) return;
   try {
-    const wr=await _fsaHandle.createWritable();
-    await wr.write(JSON.stringify({log:log,exportedAt:new Date().toISOString(),version:2},null,2));
+    const wr = await _fsaHandle.createWritable();
+    await wr.write(JSON.stringify({ log, exportedAt:new Date().toISOString(), version:2 }, null, 2));
     await wr.close();
-    localStorage.setItem('ore-fsa-ts',new Date().toISOString());
+    localStorage.setItem('ore-fsa-ts', new Date().toISOString());
     renderFsaStatus();
-  } catch(e){
-    if(e.name==='NotAllowedError') _fsaPermGranted=false;
+  } catch(e) {
+    if (e.name === 'NotAllowedError') _fsaPermGranted = false;
   }
 }
-
-// Debounced: non scrive più di una volta ogni 600ms
-function fsaWrite(){
-  if(!_fsaHandle) return;
-  if(_fsaWriteTimer) clearTimeout(_fsaWriteTimer);
-  _fsaWriteTimer=setTimeout(function(){fsaWriteNow();},600);
-}
-
-async function fsaRead(){
-  if(!_fsaHandle) return null;
-  if(!await fsaEnsurePermission()) return null;
-  try {
-    const file=await _fsaHandle.getFile();
-    return JSON.parse(await file.text());
-  } catch(e){return null;}
-}
-
-function fsaDisconnect(){
-  if(!confirm('Scollegare il file locale? Il file resterà in Download ma non verrà più aggiornato automaticamente.')) return;
-  _fsaHandle=null; _fsaPermGranted=false;
+function fsaDisconnect() {
+  if (!confirm('Scollegare il file? Rimarrà in Download ma non verrà più aggiornato.')) return;
+  _fsaHandle = null; _fsaPermGranted = false;
   _idbDel('fsa-handle').catch(function(){});
   localStorage.removeItem('ore-fsa-ts');
   renderFsaStatus();
   showToast('File locale scollegato');
 }
 
-function renderFsaStatus(){
-  const active=!!_fsaHandle;
-  document.getElementById('fsa-off-row').classList.toggle('hidden', active);
-  document.getElementById('fsa-on-row').classList.toggle('hidden', !active);
-  if(active){
-    const ts=localStorage.getItem('ore-fsa-ts');
-    const sub=document.getElementById('fsa-ts-sub');
-    if(sub&&ts){
-      const d=new Date(ts);
-      sub.textContent='Ultimo salvataggio: '+d.toLocaleString('it-IT',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+// ── Write combinato ───────────────────────────────────────────
+function fsaWrite() {
+  opfsWrite();                              // sempre (mobile + desktop)
+  if (!_isMobile && _fsaHandle) {          // solo desktop se collegato
+    if (_fsaWriteTimer) clearTimeout(_fsaWriteTimer);
+    _fsaWriteTimer = setTimeout(function(){ fsaWriteNow(); }, 600);
+  }
+}
+
+// ── UI ────────────────────────────────────────────────────────
+function renderFsaStatus() {
+  const fsaOff  = document.getElementById('fsa-off-row');
+  const fsaOn   = document.getElementById('fsa-on-row');
+  const opfsRow = document.getElementById('opfs-row');
+
+  if (_isMobile) {
+    // Su mobile mostra solo riga OPFS
+    if (fsaOff)  fsaOff.classList.add('hidden');
+    if (fsaOn)   fsaOn.classList.add('hidden');
+    if (opfsRow) {
+      opfsRow.classList.remove('hidden');
+      const ts  = localStorage.getItem('ore-opfs-ts');
+      const sub = document.getElementById('opfs-ts-sub');
+      if (sub && ts) {
+        const d = new Date(ts);
+        sub.textContent = 'Ultimo backup: ' + d.toLocaleString('it-IT', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      }
+    }
+  } else {
+    // Su desktop mostra FSA
+    if (opfsRow) opfsRow.classList.add('hidden');
+    const fsaActive = !!_fsaHandle;
+    if (fsaOff) fsaOff.classList.toggle('hidden',  fsaActive);
+    if (fsaOn)  fsaOn.classList.toggle('hidden',  !fsaActive);
+    if (fsaActive) {
+      const ts  = localStorage.getItem('ore-fsa-ts');
+      const sub = document.getElementById('fsa-ts-sub');
+      if (sub && ts) {
+        const d = new Date(ts);
+        sub.textContent = 'Ultimo salvataggio: ' + d.toLocaleString('it-IT', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      }
     }
   }
 }
@@ -633,11 +686,11 @@ async function loadData() {
     const raw=localStorage.getItem(STORAGE_KEY);
     if(raw){ const p=JSON.parse(raw); log=p.log||{}; if(p.session) session=p.session; return; }
   } catch(e){}
-  // Fallback FSA se localStorage vuoto o corrotto
-  const backup=await fsaRead();
+  // Fallback OPFS — funziona sia su mobile che su desktop
+  const backup=await opfsRead();
   if(backup&&backup.log&&Object.keys(backup.log).length>0){
     log=backup.log; save();
-    showToast('\u267b Dati ripristinati dal file locale');
+    showToast('\u267b Dati ripristinati dal backup locale');
   }
 }
 
@@ -1090,6 +1143,12 @@ function fbInit() {
         if (_fbUnsub) { _fbUnsub(); _fbUnsub = null; }
       }
     });
+    // Gestisci risultato redirect (su mobile, dopo il login Google)
+    _fbAuth.getRedirectResult().then(function(result) {
+      if (result && result.user) showToast('\u2601 Accesso effettuato: ' + result.user.email);
+    }).catch(function(e) {
+      if (e.code !== 'auth/no-auth-event') showToast('Errore login: ' + e.message, 'warn');
+    });
   } catch(e) {
     console.warn('Firebase init error:', e);
   }
@@ -1098,10 +1157,20 @@ function fbInit() {
 // ── Auth ──────────────────────────────────────────────────────
 function fbSignIn() {
   if (!_fbAuth) return;
-  _fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-    .catch(function(e) {
-      if (e.code !== 'auth/popup-closed-by-user') showToast('Errore login Google', 'warn');
-    });
+  const provider = new firebase.auth.GoogleAuthProvider();
+  // Proviamo sempre con popup — funziona su desktop e su Android Chrome moderno.
+  // Se il popup viene bloccato, ricadiamo sul redirect.
+  _fbAuth.signInWithPopup(provider).catch(function(e) {
+    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+      // Popup bloccato — usa redirect come fallback
+      showToast('Apertura login Google\u2026');
+      _fbAuth.signInWithRedirect(provider).catch(function(e2) {
+        showToast('Errore login: ' + e2.message, 'warn');
+      });
+    } else if (e.code !== 'auth/cancelled-popup-request') {
+      showToast('Errore login: ' + e.code, 'warn');
+    }
+  });
 }
 function fbSignOut() {
   if (!confirm('Disconnetterti? I dati locali rimangono.')) return;
