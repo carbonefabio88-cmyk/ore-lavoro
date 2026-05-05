@@ -1131,9 +1131,21 @@ function fbInit() {
     if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     _fbAuth = firebase.auth();
     _fbDb   = firebase.firestore();
-    // Persistenza automatica — il token sopravvive alla chiusura dell'app
     _fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
-    // Ascolta cambi auth: gestisce login/logout e ripristino automatico del token
+
+    // Gestisci PRIMA il risultato del redirect (se l'utente torna da Google)
+    _fbAuth.getRedirectResult().then(function(result) {
+      if (result && result.user) {
+        showToast('\u2601 Benvenuto ' + result.user.displayName);
+      }
+    }).catch(function(e) {
+      if (e.code && e.code !== 'auth/no-auth-event') {
+        showToast('Errore login: ' + e.code, 'warn');
+        console.error('Redirect error:', e);
+      }
+    });
+
+    // Poi ascolta i cambi di stato auth
     _fbAuth.onAuthStateChanged(function(user) {
       _fbUser = user;
       renderFbStatus();
@@ -1142,12 +1154,6 @@ function fbInit() {
       } else {
         if (_fbUnsub) { _fbUnsub(); _fbUnsub = null; }
       }
-    });
-    // Gestisci risultato redirect (su mobile, dopo il login Google)
-    _fbAuth.getRedirectResult().then(function(result) {
-      if (result && result.user) showToast('\u2601 Accesso effettuato: ' + result.user.email);
-    }).catch(function(e) {
-      if (e.code !== 'auth/no-auth-event') showToast('Errore login: ' + e.message, 'warn');
     });
   } catch(e) {
     console.warn('Firebase init error:', e);
@@ -1158,19 +1164,7 @@ function fbInit() {
 function fbSignIn() {
   if (!_fbAuth) return;
   const provider = new firebase.auth.GoogleAuthProvider();
-  // Proviamo sempre con popup — funziona su desktop e su Android Chrome moderno.
-  // Se il popup viene bloccato, ricadiamo sul redirect.
-  _fbAuth.signInWithPopup(provider).catch(function(e) {
-    if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
-      // Popup bloccato — usa redirect come fallback
-      showToast('Apertura login Google\u2026');
-      _fbAuth.signInWithRedirect(provider).catch(function(e2) {
-        showToast('Errore login: ' + e2.message, 'warn');
-      });
-    } else if (e.code !== 'auth/cancelled-popup-request') {
-      showToast('Errore login: ' + e.code, 'warn');
-    }
-  });
+  _fbAuth.signInWithRedirect(provider);
 }
 function fbSignOut() {
   if (!confirm('Disconnetterti? I dati locali rimangono.')) return;
