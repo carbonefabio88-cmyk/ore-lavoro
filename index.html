@@ -14,10 +14,10 @@
   <link rel="apple-touch-icon" href="icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <!-- Firebase (attivato quando si incolla la config) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase compat SDK (versione stabile verificata) -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1133,20 +1133,23 @@ function fbInit() {
     _fbDb   = firebase.firestore();
     _fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
 
-    // Gestisci PRIMA il risultato del redirect (se l'utente torna da Google)
+    // Gestisci il risultato del redirect PRIMA di tutto
     _fbAuth.getRedirectResult().then(function(result) {
+      console.log('getRedirectResult:', result);
       if (result && result.user) {
         showToast('\u2601 Benvenuto ' + result.user.displayName);
+      } else {
+        console.log('No redirect result user');
       }
     }).catch(function(e) {
+      console.error('getRedirectResult error:', e.code, e.message);
       if (e.code && e.code !== 'auth/no-auth-event') {
-        showToast('Errore login: ' + e.code, 'warn');
-        console.error('Redirect error:', e);
+        showToast('Errore: ' + e.code, 'warn');
       }
     });
 
-    // Poi ascolta i cambi di stato auth
     _fbAuth.onAuthStateChanged(function(user) {
+      console.log('onAuthStateChanged:', user ? user.email : 'null');
       _fbUser = user;
       renderFbStatus();
       if (user) {
@@ -1156,15 +1159,23 @@ function fbInit() {
       }
     });
   } catch(e) {
-    console.warn('Firebase init error:', e);
+    console.error('Firebase init error:', e);
   }
 }
 
 // ── Auth ──────────────────────────────────────────────────────
 function fbSignIn() {
-  if (!_fbAuth) return;
+  if (!_fbAuth) {
+    showToast('Firebase non inizializzato — ricarica la pagina', 'warn');
+    console.error('fbSignIn: _fbAuth is null. Firebase loaded?', typeof firebase !== 'undefined');
+    return;
+  }
+  showToast('Apertura login Google\u2026');
   const provider = new firebase.auth.GoogleAuthProvider();
-  _fbAuth.signInWithRedirect(provider);
+  _fbAuth.signInWithRedirect(provider).catch(function(e) {
+    showToast('Errore: ' + e.code, 'warn');
+    console.error('signInWithRedirect error:', e);
+  });
 }
 function fbSignOut() {
   if (!confirm('Disconnetterti? I dati locali rimangono.')) return;
